@@ -25,6 +25,7 @@ function NoteForm({ data }) {
       dispatch(addNote({text: noteText, createdOn: new Date().toDateString()}));
     }
     setNoteText("");
+    setEditText(false);
   };
 
   const resetForm = () => {

@@ -1,47 +1,43 @@
-import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-// import {addTodo} from "../../redux/actions/todoActions";
-// import { actions } from "../../redux/reducers/todoReducer";
-
 import styles from "./ToDoForm.module.css";
-// import { notificationSelector, resetNotification } from "../../redux/reducers/notificationReducer";
+import { createTodo } from "../../api";
+import { useForm } from "react-hook-form";
+import { setTodos } from "../../redux/reducers/todoReducer";
 
 function ToDoForm() {
-  const [todoText, setTodoText] = useState("");
   const dispatch = useDispatch();
-  // const message = useSelector(notificationSelector)
-  
-  // if(message){
-  //   setTimeout(()=>{
-  //     dispatch(resetNotification());
-  //   }, 3000);
-  // }
+  const {handleSubmit, register, reset} = useForm();
 
-  const handleSubmit = (e) =>{
-    e.preventDefault();
-    setTodoText("");
-    // console.log("[LOG]: Todo - Add Action dispatched");
-    // dispatch(actions.add(todoText));
+  const onSubmit = async (data) => {
+    data.completed = false;
+    try {
+      const result = await createTodo(data);
+      if (result) {
+        dispatch(setTodos(result)); 
+        console.log("Todo created and dispatched", result);
+      }
+    } catch (error) {
+      console.log("Error creating todo:", error);
+    } finally {
+      reset({
+        text: ''
+      });
+    }
   };
+
 
   return (
     <div className={styles.container}>
-      {/* {
-        message && 
-        <div className="alert alert-success" role="alert">
-          {message}
-        </div>
-      } */}
-     
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        className="form-control mb-3"
-        value={todoText}
-        onChange={(e) => setTodoText(e.target.value)}
-      />
-      <button className="btn btn-success float-end" type="submit">Create Todo</button>
-    </form>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <input
+          type="text"
+          className="form-control mb-3"
+          {...register("text", {required: true})}
+        />
+        <button className="btn btn-success float-end" type="submit">
+          Create Todo
+        </button>
+      </form>
     </div>
   );
 }

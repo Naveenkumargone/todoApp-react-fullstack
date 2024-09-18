@@ -1,8 +1,13 @@
 import { useSelector, useDispatch } from "react-redux";
-import { setTodos } from "../../redux/reducers/todoReducer";
+import {
+  setTodos,
+  getTodos,
+  updateTodo,
+} from "../../redux/reducers/todoReducer";
 import styles from "./ToDoList.module.css";
 import { useEffect, useState } from "react";
-import { store } from "../../redux/store";
+import { deleteTodos, getAllTodos, toggleTodo } from "../../api";
+import { Trash } from "iconsax-react";
 
 function ToDoList() {
   const dispatch = useDispatch();
@@ -11,28 +16,47 @@ function ToDoList() {
 
   const todos = useSelector((state) => state?.todo?.todos || []);
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch("http://localhost:4100/api/todos");
-      const parsedJson = await response.json();
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const result = await getAllTodos();
+        dispatch(getTodos(result));
+        setLoading(false);
+      } catch (error) {
+        console.log(error);
+        setLoading(false);
+      }
+    };
 
-      dispatch(setTodos(parsedJson));
-      setLoading(false);
+    fetchTodos();
+  }, [dispatch]);
+
+  const toggle = async (id) => {
+    try {
+      const result = await toggleTodo(id);
+      if (result.message === "todo updated successfully") {
+        dispatch(updateTodo(result.data));
+      } else {
+        console.log("Todo not found");
+      }
     } catch (error) {
-      setLoading(false);
+      console.log(error);
     }
   };
 
-  const toggle = (index) => {
-    const newtodos = todos.map((todo, i) => 
-      i === index ? {...todo, completed: !todo.completed} : todo
-    )
-    dispatch(setTodos(newtodos));
+  const deleteTodo = async (id) => {
+    console.log(id);
+    try {
+      const result = await deleteTodos(id);
+      if (result.message === "todo deleted successfully") {
+        dispatch(setTodos(todos.filter((todo) => todo._id !== id)));
+      } else {
+        console.log("todo not found");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   return (
     <div className={styles.container}>
@@ -41,7 +65,7 @@ function ToDoList() {
       ) : todos.length > 0 ? (
         <ul>
           {todos.map((todo, index) => (
-            <li className={styles.item} key={index}>
+            <li className={styles.item} key={todo._id}>
               <span className={styles.content}>{todo.text}</span>
               <span
                 className={todo.completed ? styles.completed : styles.pending}
@@ -51,11 +75,18 @@ function ToDoList() {
               <button
                 className="btn btn-warning"
                 onClick={() => {
-                  toggle(index);
+                  toggle(todo._id);
                 }}
               >
                 Toggle
               </button>
+              <Trash
+                onClick={() => {
+                  deleteTodo(todo._id);
+                }}
+                size="32"
+                color="red"
+              />
             </li>
           ))}
         </ul>
